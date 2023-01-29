@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, TextInput, StyleSheet } from "react-native";
 
 export function Sudoku() {
   // Create an empty 9x9 grid
   const [grid, setGrid] = useState(
     Array(9)
       .fill()
-      .map(() => Array(9).fill(null))
+      .map(() => Array(9).fill(""))
   );
+
+  const [selectedCell, setSelectedCell] = useState([0, 0]);
 
   // Helper function to check if a number is valid in a given cell
   function isValid(grid, row, col, num) {
@@ -40,50 +42,109 @@ export function Sudoku() {
   }
 
   // Helper function to generate a new puzzle
-  function generatePuzzle(grid, row, col) {
-    if (row === 9) {
-      setGrid(grid);
-      return true;
-    }
+  function generatePuzzle() {
+    let newGrid = Array(9)
+      .fill()
+      .map(() => Array(9).fill(""));
 
-    if (grid[row][col]) {
-      if (col === 8) {
-        return generatePuzzle(grid, row + 1, 0);
-      } else {
-        return generatePuzzle(grid, row, col + 1);
-      }
-    }
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let count = 0;
+    while (count < 40) {
+      let randomRow = Math.floor(Math.random() * 9);
+      let randomCol = Math.floor(Math.random() * 9);
 
-    for (let num = 1; num <= 9; num++) {
-      if (isValid(grid, row, col, num)) {
-        grid[row][col] = num;
-        if (col === 8) {
-          if (generatePuzzle(grid, row + 1, 0)) {
-            return true;
-          }
-        } else {
-          if (generatePuzzle(grid, row, col + 1)) {
-            return true;
-          }
+      if (!newGrid[randomRow][randomCol]) {
+        let randomIndex = Math.floor(Math.random() * numbers.length);
+        let randomNum = numbers[randomIndex];
+
+        if (isValid(newGrid, randomRow, randomCol, randomNum)) {
+          newGrid[randomRow][randomCol] = randomNum;
+          count++;
         }
-        grid[row][col] = null;
       }
     }
+    console.log("🚀 ~ file: Sudoku.js:47 ~ generatePuzzle ~ newGrid", newGrid);
+    setGrid(newGrid);
+  }
 
-    return false;
+  function handleSelect(row, col) {
+    setSelectedCell([row, col]);
+  }
+
+  function handleInput(num) {
+    let row = selectedCell[0];
+    let col = selectedCell[1];
+    if (isValid(grid, row, col, num)) {
+      let newGrid = [...grid];
+      newGrid[row][col] = num;
+      setGrid(newGrid);
+    }
+  }
+
+  function isEditable(row, col) {
+    let newGrid = grid;
+
+    if (newGrid[row][col] !== "") {
+      return false;
+    }
+
+    return true;
   }
 
   useEffect(() => {
-    generatePuzzle(grid, 0, 0);
+    generatePuzzle();
   }, []);
 
-  return <View style={styles.container}>{console.log(grid)}</View>;
+  return (
+    <View style={styles.container}>
+      {grid.map((row, i) => (
+        <View style={styles.row} key={i}>
+          {row.map((element, j) => (
+            <View
+              style={[
+                styles.cell,
+                selectedCell[0] === i && selectedCell[1] === j
+                  ? styles.selectedCell
+                  : null,
+              ]}
+              key={j}
+              onPress={() => handleSelect(i, j)}
+            >
+              <TextInput
+                style={styles.cellText}
+                value={element || ""}
+                onChangeText={(text) => handleInput(text, i, j)}
+                keyboardType="number-pad"
+                maxLength={1}
+                editable={isEditable(i, j)}
+              />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
   },
-
+  row: {
+    flexDirection: "row",
+  },
+  cell: {
+    width: 50,
+    height: 50,
+    borderWidth: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  selectedCell: {
+    backgroundColor: "lightgray",
+  },
+  cellText: {
+    fontSize: 30,
+  },
 });
